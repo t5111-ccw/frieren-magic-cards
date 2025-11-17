@@ -207,7 +207,15 @@
             try {
                 // 讀取全域提供的設定和 Token
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                const firebaseConfig = {
+  apiKey: "AIzaSyBYWpbdDJ7mV1Rj59HaSMKV-uyp1hrRzP0",
+  authDomain: "frieren-magic-cards.firebaseapp.com",
+  projectId: "frieren-magic-cards",
+  storageBucket: "frieren-magic-cards.firebasestorage.app",
+  messagingSenderId: "871120496838",
+  appId: "1:871120496838:web:cafa773f25964e8d7e0fc7",
+  measurementId: "G-S8Z9BW7XRX"
+};
                 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
                 if (Object.keys(firebaseConfig).length === 0) {
@@ -607,3 +615,4 @@
 
 </body>
 </html>
+
