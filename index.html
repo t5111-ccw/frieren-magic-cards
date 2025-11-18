@@ -102,7 +102,7 @@
         import { getFirestore, doc, collection, onSnapshot, getDoc, runTransaction, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-       enableLogging(true);   // 全部 Firestore log
+       setLogLevel('debug'); // 啟用 Firebase 偵錯日誌
         // --- 全域變數 ---
         window.firebaseApp = null;
         window.db = null;
@@ -643,4 +643,5 @@
 
 
 </html>
+
 
