@@ -300,51 +300,58 @@
             }
         };
 
-        /**
-        * 點擊蒐藏（增加票數）
-        */
-        window.collectCard = async () => {
-            if (!window.db || !window.auth || window.spellData.length === 0) {
-                alertUser('請稍候，系統仍在初始化...');
-                return;
-            }
-            // 💥 NEW: 從 DOM 中獲取最頂層卡片的資料
-    const activeCardDom = document.getElementById('current-active-card');
-    const cardIdToUpdate = activeCardDom ? activeCardDom.getAttribute('data-id') : null;
-    
-    if (!cardIdToUpdate) {
-        alertUser('錯誤：找不到要蒐藏的魔法卡 ID。', true);
-        return;
-    }
-           // 取得完整的卡片物件，以便獲取 title (用於 alert)
-    const card = window.spellData.find(c => c.id === cardIdToUpdate);
-
-    // 確保 getFirestorePath() 函式已經使用 'frieren_magic_cards'
-    const sessionDataPath = getFirestorePath(); 
-    const docRef = doc(window.db, sessionDataPath, cardIdToUpdate); // <-- 使用 DOM 傳遞的 ID
-
- try {
-        await runTransaction(window.db, async (transaction) => {
-            const cardDoc = await transaction.get(docRef);
-            
-            if (cardDoc.exists()) {
-                const newVotes = (cardDoc.data().votes || 0) + 1;
-                transaction.update(docRef, { votes: newVotes });
-                alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${newVotes}。`);
-            } else {
-                // 💥 修正：卡片文檔不存在時，創建它並設定初始票數為 1
-                transaction.set(docRef, {
-                    title: card.title, // 從靜態資料中獲取 title
-                    votes: 1 
-                });
-                alertUser(`成功蒐藏！「${card.title}」是第一票！`);
+/**
+        * 點擊蒐藏（增加票數）
+        */
+        window.collectCard = async () => {
+            if (!window.db || !window.auth || window.spellData.length === 0) {
+                alertUser('請稍候，系統仍在初始化...');
+                return;
             }
-        });
-    } catch (error) {
-        console.error("Collecting card failed:", error);
-        alertUser(`蒐藏失敗：${error.message}`, true);
-    }
-};
+            // 💥 NEW: 從 DOM 中獲取最頂層卡片的資料
+            const activeCardDom = document.getElementById('current-active-card');
+            const cardIdToUpdate = activeCardDom ? activeCardDom.getAttribute('data-id') : null;
+            
+            if (!cardIdToUpdate) {
+                alertUser('錯誤：找不到要蒐藏的魔法卡 ID。', true);
+                return;
+            }
+            // 取得完整的卡片物件，以便獲取 title (用於 alert)
+            const card = window.spellData.find(c => c.id === cardIdToUpdate);
+            if (!card) return; // 安全檢查
+
+            // 確保 getFirestorePath() 函式已經使用 'frieren_magic_cards'
+            const sessionDataPath = getFirestorePath(); 
+            const docRef = doc(window.db, sessionDataPath, cardIdToUpdate); // <-- 使用 DOM 傳遞的 ID
+
+            let finalNewVotes = 0; // 用於儲存最終票數
+            
+            try {
+                await runTransaction(window.db, async (transaction) => {
+                    const cardDoc = await transaction.get(docRef);
+                    
+                    if (cardDoc.exists()) {
+                        // 情況一：文件存在，增加票數
+                        finalNewVotes = (cardDoc.data().votes || 0) + 1;
+                        transaction.update(docRef, { votes: finalNewVotes });
+                    } else {
+                        // 情況二：文件不存在，創建新文件並設定初始票數 1
+                        finalNewVotes = 1;
+                        transaction.set(docRef, { 
+                            title: card.title, // 在此設定 title 以便排行榜能顯示
+                            votes: finalNewVotes 
+                        });
+                    }
+                });
+                
+                // 交易成功後才顯示提示
+                alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${finalNewVotes}。`);
+                
+            } catch (error) {
+                console.error("Collecting card failed:", error);
+                alertUser(`蒐藏失敗：${error.message}`, true);
+            }
+        };
 
         // 設置即時人氣榜監聽器
         const setupRealtimeLeaderboard = () => {
@@ -556,6 +563,7 @@
 
 </body>
 </html>
+
 
 
 
