@@ -474,15 +474,17 @@
                 
                 if (spell) {
                     const card = createCard(spell);
-                    // 確保卡片是插入在 DOM 堆疊的底部 (CSS 讓它視覺上在頂部)
-                    stack.insertBefore(card, stack.firstChild);
+                    // 為了讓 CSS 的 :nth-child(2) 和 :nth-child(3) 樣式正確應用，
+                    // DOM 中的第一個元素應該是最頂層的卡片 (i=0)。
+                    // 由於 i 是從 0, 1, 2 遞增，我們使用 appendChild 或 insertBefore(card, stack.lastChild) 來保持正確的視覺層次。
+                    stack.appendChild(card); 
 
-                    // 最上層的卡片 (DOM 中的最後一個 child) 獲得互動事件
-                    if (i === 0) {
-                        currentCard = card;
-                        // 💥 NEW: 給最上層的卡片一個特定的 ID
-                card.id = 'current-active-card';
-                    }
+                    // i=0 始終是當前卡片，它在 DOM 中是第一個 child
+                    if (i === 0) {
+                        currentCard = card;
+                        // 賦予 ID 以便 collectCard 查找
+                        card.id = 'current-active-card';
+                    }
                 }
             }
         }
@@ -563,6 +565,7 @@
 
 </body>
 </html>
+
 
 
 
