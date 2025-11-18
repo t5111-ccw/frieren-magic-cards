@@ -258,7 +258,8 @@
                 await setupInitialCards();
                 setupRealtimeLeaderboard();
                 renderCardStack();
-
+                // **加入這行新的程式碼來清除狀態**
+                document.getElementById('status').textContent = '卡片及人氣榜已準備就緒！';
             } catch (error) {
                 console.error("Firebase initialization or sign-in failed:", error);
                 // 顯示特定的錯誤訊息，有助於除錯
@@ -659,6 +660,7 @@
 
 
 </html>
+
 
 
 
