@@ -86,229 +86,229 @@
             background: #fef3c7;
         }
     </style>
-    <script type="module">
-        self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, getDoc, runTransaction, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+        self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, getDoc, runTransaction, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- 全域變數 ---
-        window.firebaseApp = null;
-        window.db = null;
-        window.auth = null;
-        window.userId = null;
-        window.sessionId = null; // **NEW: 每次講座的唯一 ID**
-        window.currentCardIndex = 0;
-        window.currentLeaderboard = [];
-        window.spellData = []; // 用於儲存要循環的卡片資料
-        
-        // 來自 Heroicons 的 SVG 圖標 (保持不變)
-        const ICONS = {
-            flower: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.195l-2.073.193c-1.11.103-2.064.957-2.064 2.08V20.25c0 1.136-.847 2.1-1.98 2.195l-2.073.193c-1.11.103-2.064.957-2.064 2.08V20.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12.75 12.75l-1.01-1.01-1.01 1.01m1.01-1.01v-1.01h1.01m-1.01 1.01h-1.01v-1.01m0 0v1.01M3.75 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.195l-2.073.193C-.103 17.217-.947 16.263-.947 15.131v-4.286c0-.97.616-1.813 1.5-2.097L3.75 8.511zM12.75 3.75l-1.01 1.01-1.01-1.01m1.01 1.01v1.01h1.01m-1.01-1.01h-1.01v1.01m0 0v1.01M15 4.75l.939-.939a.95.95 0 011.061 0l.939.939M15 4.75l.939.939m-.939-.939v1.879M15 4.75h1.879m-1.879 0L13.94 3.811M9 4.75l-.939-.939a.95.95 0 00-1.061 0l-.939.939M9 4.75l-.939.939m.939-.939v1.879M9 4.75H7.121m1.879 0L10.06 3.811" /></svg>',
-            grape: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-            statue: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A1.5 1.5 0 0118 21.75H6a1.5 1.5 0 01-1.499-1.632z" /></svg>',
-            burger: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0A2.25 2.25 0 0018.75 9.75H5.25A2.25 2.25 0 003 12m18 0a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12" /></svg>',
-            tea: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-1.718-.668-3.322-1.872-4.526A4.498 4.498 0 009 0C7.161 0 5.5 1.66 5.5 3.75v.063c-.441.246-.85.539-1.208.882A4.5 4.5 0 000 8.25v3.75c0 1.683.806 3.19 2.009 4.093l.3.218c.847.62 1.935.939 3.065.939h6.38a.563.563 0 00.563-.563v-3.87a.563.563 0 00-.31-.5l-2.65-1.06a1.126 1.126 0 01-.562-1.332c.11-.27.27-.52.478-.736.209-.215.46-.38.74-.487.278-.106.574-.16.882-.16h.063c1.02 0 1.96.402 2.65 1.126l2.5 2.5c.26.26.628.402 1.006.402h3.116c1.1 0 2.097-.81 2.308-1.9l.792-4.062a2.25 2.25 0 00-2.16-2.618l-3.86-.551Z" /></svg>',
-            clothes: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>',
-            bird: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.875L5.999 12zm0 0h7.5" /></svg>',
-            search: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>',
-            egg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
-        };
+        // --- 全域變數 ---
+        window.firebaseApp = null;
+        window.db = null;
+        window.auth = null;
+        window.userId = null;
+        window.sessionId = null; // **NEW: 每次講座的唯一 ID**
+        window.currentCardIndex = 0;
+        window.currentLeaderboard = [];
+        window.spellData = []; // 用於儲存要循環的卡片資料
+        
+        // 來自 Heroicons 的 SVG 圖標 (保持不變)
+        const ICONS = {
+            flower: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.195l-2.073.193c-1.11.103-2.064.957-2.064 2.08V20.25c0 1.136-.847 2.1-1.98 2.195l-2.073.193c-1.11.103-2.064.957-2.064 2.08V20.25" /><path stroke-linecap="round" stroke-linejoin="round" d="M12.75 12.75l-1.01-1.01-1.01 1.01m1.01-1.01v-1.01h1.01m-1.01 1.01h-1.01v-1.01m0 0v1.01M3.75 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.195l-2.073.193C-.103 17.217-.947 16.263-.947 15.131v-4.286c0-.97.616-1.813 1.5-2.097L3.75 8.511zM12.75 3.75l-1.01 1.01-1.01-1.01m1.01 1.01v1.01h1.01m-1.01-1.01h-1.01v1.01m0 0v1.01M15 4.75l.939-.939a.95.95 0 011.061 0l.939.939M15 4.75l.939.939m-.939-.939v1.879M15 4.75h1.879m-1.879 0L13.94 3.811M9 4.75l-.939-.939a.95.95 0 00-1.061 0l-.939.939M9 4.75l-.939.939m.939-.939v1.879M9 4.75H7.121m1.879 0L10.06 3.811" /></svg>',
+            grape: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+            statue: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A1.5 1.5 0 0118 21.75H6a1.5 1.5 0 01-1.499-1.632z" /></svg>',
+            burger: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0A2.25 2.25 0 0018.75 9.75H5.25A2.25 2.25 0 003 12m18 0a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12" /></svg>',
+            tea: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-1.718-.668-3.322-1.872-4.526A4.498 4.498 0 009 0C7.161 0 5.5 1.66 5.5 3.75v.063c-.441.246-.85.539-1.208.882A4.5 4.5 0 000 8.25v3.75c0 1.683.806 3.19 2.009 4.093l.3.218c.847.62 1.935.939 3.065.939h6.38a.563.563 0 00.563-.563v-3.87a.563.563 0 00-.31-.5l-2.65-1.06a1.126 1.126 0 01-.562-1.332c.11-.27.27-.52.478-.736.209-.215.46-.38.74-.487.278-.106.574-.16.882-.16h.063c1.02 0 1.96.402 2.65 1.126l2.5 2.5c.26.26.628.402 1.006.402h3.116c1.1 0 2.097-.81 2.308-1.9l.792-4.062a2.25 2.25 0 00-2.16-2.618l-3.86-.551Z" /></svg>',
+            clothes: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>',
+            bird: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.875L5.999 12zm0 0h7.5" /></svg>',
+            search: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>',
+            egg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+        };
 
-        // 魔法卡片資料 (保持不變)
-        const ORIGINAL_SPELL_DATA = [
-            {
-                id: "flower_magic",
-                title: "變出花田的魔法",
-                icon: ICONS.flower,
-                color: "text-pink-600",
-                description: "芙莉蓮最珍視的魔法之一。欣梅爾的故鄉盛開著蒼月草，這是他最喜歡的魔法，也是連結師傅弗蘭梅的魔法。"
-            },
-            {
-                id: "grape_magic",
-                title: "把甜葡萄變成酸葡萄的魔法",
-                icon: ICONS.grape,
-                color: "text-purple-700",
-                description: "純粹是為了讓戰士艾冉開心而學的。艾冉唯一喜歡的甜點就是酸葡萄。"
-            },
-            {
-                id: "statue_magic",
-                title: "去除銅像生鏽的魔法",
-                icon: ICONS.statue,
-                color: "text-yellow-700",
-                description: "欣梅爾過世後，芙莉蓮在旅途中用來「探望」老朋友的魔法，仔細地清潔他的雕像。"
-            },
-            {
-                id: "burger_magic",
-                title: "召喚超巨大漢堡排的魔法",
-                icon: ICONS.burger,
-                color: "text-orange-700",
-                description: "僧侶海塔開玩笑想要的魔法。芙莉蓮真的花了好幾年去找，體現了她對夥伴願望的（笨拙）重視。"
-            },
-            {
-                id: "tea_magic",
-                title: "變出熱茶的魔法",
-                icon: ICONS.tea,
-                color: "text-green-700",
-                description: "在寒冷的旅途中，能隨時喝到熱茶。這是芙莉蓮和費倫在日常中經常使用的便利魔法。"
-            },
-            {
-                id: "clothes_magic",
-                title: "能看透衣服的魔法",
-                icon: ICONS.clothes,
-                color: "text-blue-700",
-                description: "「好色。」—— 費倫。芙莉蓮純粹出於魔法宅的好奇心而收藏，完全不明白這個魔法的倫理含意。"
-            },
-            {
-                id: "bird_magic",
-                title: "捕鳥的魔法",
-                icon: ICONS.bird,
-                color: "text-sky-700",
-                description: "用途不明的魔法。但在某次旅途中，修塔爾克逃跑時，芙莉蓮曾用這個魔法把他抓回來。"
-            },
-            {
-                id: "search_magic",
-                title: "尋找失物的魔法",
-                icon: ICONS.search,
-                color: "text-gray-700",
-                description: "在日常中非常實用，用來幫村民或夥伴尋找遺失的小東西，例如耳環或紀念品。"
-            },
-            {
-                id: "egg_magic",
-                title: "打碎雞蛋時蛋殼絕對不會掉進去的魔法",
-                icon: ICONS.egg,
-                color: "text-amber-700",
-                description: "廚房的夢幻魔法。芙莉蓮花了不短的時間才從一本魔導書中學會它，是她熱衷於提升生活品質的證明。"
-            }
-        ];
+        // 魔法卡片資料 (保持不變)
+        const ORIGINAL_SPELL_DATA = [
+            {
+                id: "flower_magic",
+                title: "變出花田的魔法",
+                icon: ICONS.flower,
+                color: "text-pink-600",
+                description: "芙莉蓮最珍視的魔法之一。欣梅爾的故鄉盛開著蒼月草，這是他最喜歡的魔法，也是連結師傅弗蘭梅的魔法。"
+            },
+            {
+                id: "grape_magic",
+                title: "把甜葡萄變成酸葡萄的魔法",
+                icon: ICONS.grape,
+                color: "text-purple-700",
+                description: "純粹是為了讓戰士艾冉開心而學的。艾冉唯一喜歡的甜點就是酸葡萄。"
+            },
+            {
+                id: "statue_magic",
+                title: "去除銅像生鏽的魔法",
+                icon: ICONS.statue,
+                color: "text-yellow-700",
+                description: "欣梅爾過世後，芙莉蓮在旅途中用來「探望」老朋友的魔法，仔細地清潔他的雕像。"
+            },
+            {
+                id: "burger_magic",
+                title: "召喚超巨大漢堡排的魔法",
+                icon: ICONS.burger,
+                color: "text-orange-700",
+                description: "僧侶海塔開玩笑想要的魔法。芙莉蓮真的花了好幾年去找，體現了她對夥伴願望的（笨拙）重視。"
+            },
+            {
+                id: "tea_magic",
+                title: "變出熱茶的魔法",
+                icon: ICONS.tea,
+                color: "text-green-700",
+                description: "在寒冷的旅途中，能隨時喝到熱茶。這是芙莉蓮和費倫在日常中經常使用的便利魔法。"
+            },
+            {
+                id: "clothes_magic",
+                title: "能看透衣服的魔法",
+                icon: ICONS.clothes,
+                color: "text-blue-700",
+                description: "「好色。」—— 費倫。芙莉蓮純粹出於魔法宅的好奇心而收藏，完全不明白這個魔法的倫理含意。"
+            },
+            {
+                id: "bird_magic",
+                title: "捕鳥的魔法",
+                icon: ICONS.bird,
+                color: "text-sky-700",
+                description: "用途不明的魔法。但在某次旅途中，修塔爾克逃跑時，芙莉蓮曾用這個魔法把他抓回來。"
+            },
+            {
+                id: "search_magic",
+                title: "尋找失物的魔法",
+                icon: ICONS.search,
+                color: "text-gray-700",
+                description: "在日常中非常實用，用來幫村民或夥伴尋找遺失的小東西，例如耳環或紀念品。"
+            },
+            {
+                id: "egg_magic",
+                title: "打碎雞蛋時蛋殼絕對不會掉進去的魔法",
+                icon: ICONS.egg,
+                color: "text-amber-700",
+                description: "廚房的夢幻魔法。芙莉蓮花了不短的時間才從一本魔導書中學會它，是她熱衷於提升生活品質的證明。"
+            }
+        ];
 
-        // --- 2. 變數與 DOM 元素定義 ---
-        const stack = document.getElementById('card-stack');
-        let currentCard = null; // 當前正在顯示的 DOM 卡片
+        // --- 2. 變數與 DOM 元素定義 ---
+        const stack = document.getElementById('card-stack');
+        let currentCard = null; // 當前正在顯示的 DOM 卡片
 
-        // -----------------------------------------------------
-        // Firebase 與 Firestore 邏輯
-        // -----------------------------------------------------
+        // -----------------------------------------------------
+        // Firebase 與 Firestore 邏輯
+        // -----------------------------------------------------
 
-        /**
-        * **NEW** 取得當前講座的 Firestore 路徑
-        * 這樣每次載入網頁都會使用不同的路徑，實現數據重置。
-        */
-        const getFirestorePath = () => {
-            // 使用 sessions/[唯一 ID]/magic_cards 來隔離數據
-            return `sessions/${window.sessionId}/frieren_magic_cards`; 
-        }
+        /**
+        * **NEW** 取得當前講座的 Firestore 路徑
+        * 這樣每次載入網頁都會使用不同的路徑，實現數據重置。
+        */
+        const getFirestorePath = () => {
+            // 使用 sessions/[唯一 ID]/magic_cards 來隔離數據
+            return `sessions/${window.sessionId}/frieren_magic_cards`; 
+        }
 
-        // Firebase 初始化與認證
-        const initFirebase = async () => {
-            try {
-                // -------------------------------------------------------------------
-                // ** 部署修正：這是您必須填入自己 Firebase 配置的地方 **
-                const YOUR_FIREBASE_CONFIG = {
-                    apiKey: "AIzaSyBYWpbdDJ7mV1Rj59HaSMKV-uyp1hrRzP0", // <-- 請填入您的 API Key
-                    authDomain: "frieren-magic-cards.firebaseapp.com", // <-- 請填入您的 Auth Domain (例如: your-project-id.firebaseapp.com)
-                    projectId: "frieren-magic-cards", // <-- 請填入您的 Project ID
-                    storageBucket: "frieren-magic-cards.appspot.com",
-                    messagingSenderId: "871120496838",
-                    appId: "1:871120496838:web:cafa773f25964e8d7e0fc7",
-                    measurementId: "G-S8Z9BW7XRX"
-                };
-                // -------------------------------------------------------------------
+        // Firebase 初始化與認證
+        const initFirebase = async () => {
+            try {
+                // -------------------------------------------------------------------
+                // ** 部署修正：這是您必須填入自己 Firebase 配置的地方 **
+                const YOUR_FIREBASE_CONFIG = {
+                    apiKey: "AIzaSyBYWpbdDJ7mV1Rj59HaSMKV-uyp1hrRzP0", // <-- 請填入您的 API Key
+                    authDomain: "frieren-magic-cards.firebaseapp.com", // <-- 請填入您的 Auth Domain (例如: your-project-id.firebaseapp.com)
+                    projectId: "frieren-magic-cards", // <-- 請填入您的 Project ID
+                    storageBucket: "frieren-magic-cards.appspot.com",
+                    messagingSenderId: "871120496838",
+                    appId: "1:871120496838:web:cafa773f25964e8d7e0fc7",
+                    measurementId: "G-S8Z9BW7XRX"
+                };
+                // -------------------------------------------------------------------
 
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                
-                let firebaseConfig = YOUR_FIREBASE_CONFIG;
-                if (typeof __firebase_config !== 'undefined') {
-                    const canvasConfig = JSON.parse(__firebase_config);
-                    if (Object.keys(canvasConfig).length > 0) {
-                        firebaseConfig = canvasConfig;
-                    }
-                }
-                
-                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
-                    console.error("Firebase config is missing or invalid.");
-                    document.getElementById('status').textContent = '錯誤：Firebase 設定遺失。請檢查 YOUR_FIREBASE_CONFIG 是否已填入。';
-                    return;
-                }
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                let firebaseConfig = YOUR_FIREBASE_CONFIG;
+                if (typeof __firebase_config !== 'undefined') {
+                    const canvasConfig = JSON.parse(__firebase_config);
+                    if (Object.keys(canvasConfig).length > 0) {
+                        firebaseConfig = canvasConfig;
+                    }
+                }
+                
+                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+                    console.error("Firebase config is missing or invalid.");
+                    document.getElementById('status').textContent = '錯誤：Firebase 設定遺失。請檢查 YOUR_FIREBASE_CONFIG 是否已填入。';
+                    return;
+                }
 
-                window.firebaseApp = initializeApp(firebaseConfig);
-                window.db = getFirestore(window.firebaseApp);
-                window.auth = getAuth(window.firebaseApp);
+                window.firebaseApp = initializeApp(firebaseConfig);
+                window.db = getFirestore(window.firebaseApp);
+                window.auth = getAuth(window.firebaseApp);
 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(window.auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(window.auth);
-                }
+                if (initialAuthToken) {
+                    await signInWithCustomToken(window.auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(window.auth);
+                }
 
-                // 檢查登入狀態
-                window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
-                window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
+                // 檢查登入狀態
+                window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
+                window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
 
-                document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...'; // 階段一狀態
+                document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...'; // 階段一狀態
 
-                window.spellData = ORIGINAL_SPELL_DATA; // 載入卡片資料
-                await setupInitialCards();
-                setupRealtimeLeaderboard();
-                renderCardStack();
-                
-                // 載入完成，顯示成功訊息並設定計時器清除
-                document.getElementById('status').textContent = '成功！芙莉蓮的魔法書已開啟。';
-                setTimeout(() => {
-                    document.getElementById('status').textContent = ''; // 3 秒後清除訊息
-                }, 3000);
-                // -----------------------------------------------
+                window.spellData = ORIGINAL_SPELL_DATA; // 載入卡片資料
+                await setupInitialCards();
+                setupRealtimeLeaderboard();
+                renderCardStack();
+                
+                // 載入完成，顯示成功訊息並設定計時器清除
+                document.getElementById('status').textContent = '成功！芙莉蓮的魔法書已開啟。';
+                setTimeout(() => {
+                    document.getElementById('status').textContent = ''; // 3 秒後清除訊息
+                }, 3000);
+                // -----------------------------------------------
 
-            } catch (error) {
-                console.error("Firebase initialization or sign-in failed:", error);
-                // 顯示特定的錯誤訊息，有助於除錯
-                document.getElementById('status').textContent = `錯誤：Firebase 初始化失敗 (${error.message})`;
-            }
-        };
+            } catch (error) {
+                console.error("Firebase initialization or sign-in failed:", error);
+                // 顯示特定的錯誤訊息，有助於除錯
+                document.getElementById('status').textContent = `錯誤：Firebase 初始化失敗 (${error.message})`;
+            }
+        };
 
-        // 設置初始卡片（如果不存在）
-        const setupInitialCards = async () => {
-            if (!window.db) return;
-            
-            // **修正點：使用 session-specific 路徑**
-            const sessionDataPath = getFirestorePath();
-            
-            const batch = writeBatch(window.db);
-            let needsUpdate = false;
+        // 設置初始卡片（如果不存在）
+        const setupInitialCards = async () => {
+            if (!window.db) return;
+            
+            // **修正點：使用 session-specific 路徑**
+            const sessionDataPath = getFirestorePath();
+            
+            const batch = writeBatch(window.db);
+            let needsUpdate = false;
 
-            for (const card of window.spellData) {
-                const docRef = doc(window.db, sessionDataPath, card.id); // <-- 使用新路徑
-                const docSnap = await getDoc(docRef);
+            for (const card of window.spellData) {
+                const docRef = doc(window.db, sessionDataPath, card.id); // <-- 使用新路徑
+                const docSnap = await getDoc(docRef);
 
-                if (!docSnap.exists()) {
-                    batch.set(docRef, {
-                        title: card.title,
-                        votes: 0 // 初始票數為 0
-                    });
-                    needsUpdate = true;
-                }
-            }
+                if (!docSnap.exists()) {
+                    batch.set(docRef, {
+                        title: card.title,
+                        votes: 0 // 初始票數為 0
+                    });
+                    needsUpdate = true;
+                }
+            }
 
-            if (needsUpdate) {
-                try {
-                    await batch.commit();
-                } catch (e) {
-                    console.error("Batch write failed:", e);
-                }
-            }
-        };
+            if (needsUpdate) {
+                try {
+                    await batch.commit();
+                } catch (e) {
+                    console.error("Batch write failed:", e);
+                }
+            }
+        };
 
-/**
-        * 點擊蒐藏（增加票數）
+        /**
+        * 點擊蒐藏（增加票數）- 已修正錯誤處理和交易邏輯
         */
         window.collectCard = async () => {
             if (!window.db || !window.auth || window.spellData.length === 0) {
                 alertUser('請稍候，系統仍在初始化...');
                 return;
             }
-            // 💥 NEW: 從 DOM 中獲取最頂層卡片的資料
+            // 從 DOM 中獲取最頂層卡片的資料 ID
             const activeCardDom = document.getElementById('current-active-card');
             const cardIdToUpdate = activeCardDom ? activeCardDom.getAttribute('data-id') : null;
             
@@ -316,16 +316,15 @@
                 alertUser('錯誤：找不到要蒐藏的魔法卡 ID。', true);
                 return;
             }
-            // 取得完整的卡片物件，以便獲取 title (用於 alert)
+
             const card = window.spellData.find(c => c.id === cardIdToUpdate);
             if (!card) return; // 安全檢查
 
-            // 確保 getFirestorePath() 函式已經使用 'frieren_magic_cards'
             const sessionDataPath = getFirestorePath(); 
-            const docRef = doc(window.db, sessionDataPath, cardIdToUpdate); // <-- 使用 DOM 傳遞的 ID
+            const docRef = doc(window.db, sessionDataPath, cardIdToUpdate);
 
             let finalNewVotes = 0; // 用於儲存最終票數
-            
+
             try {
                 await runTransaction(window.db, async (transaction) => {
                     const cardDoc = await transaction.get(docRef);
@@ -353,162 +352,163 @@
             }
         };
 
-        // 設置即時人氣榜監聽器
-        const setupRealtimeLeaderboard = () => {
-            if (!window.db) return;
-            
-            // **修正點：使用 session-specific 路徑**
-            const sessionDataPath = getFirestorePath();
-            
-            const q = query(
-                collection(window.db, sessionDataPath), // <-- 使用新路徑
-                where("votes", ">", 0), // 凡是 0 票的魔法卡，都不顯示
-            );
 
-            onSnapshot(q, (snapshot) => {
-                let newLeaderboard = [];
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    // 將人氣榜的數據與卡片細節數據合併，以便顯示 icon 和 color
-                    const cardDetail = ORIGINAL_SPELL_DATA.find(c => c.id === doc.id);
-                    if (cardDetail) {
-                       newLeaderboard.push({ id: doc.id, ...data, icon: cardDetail.icon, color: cardDetail.color });
-                    }
-                });
+        // 設置即時人氣榜監聽器
+        const setupRealtimeLeaderboard = () => {
+            if (!window.db) return;
+            
+            // **修正點：使用 session-specific 路徑**
+            const sessionDataPath = getFirestorePath();
+            
+            const q = query(
+                collection(window.db, sessionDataPath), // <-- 使用新路徑
+                where("votes", ">", 0), // 凡是 0 票的魔法卡，都不顯示
+            );
 
-                // 在客戶端進行排序：依票數降序排列
-                newLeaderboard.sort((a, b) => b.votes - a.votes);
-                window.currentLeaderboard = newLeaderboard;
-                renderLeaderboard();
-            }, (error) => {
-                console.error("Leaderboard snapshot error:", error);
-                document.getElementById('status').textContent = '人氣榜載入失敗。';
-            });
-        };
+            onSnapshot(q, (snapshot) => {
+                let newLeaderboard = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // 將人氣榜的數據與卡片細節數據合併，以便顯示 icon 和 color
+                    const cardDetail = ORIGINAL_SPELL_DATA.find(c => c.id === doc.id);
+                    if (cardDetail) {
+                       newLeaderboard.push({ id: doc.id, ...data, icon: cardDetail.icon, color: cardDetail.color });
+                    }
+                });
 
-        // 渲染即時人氣榜
-        const renderLeaderboard = () => {
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = '';
+                // 在客戶端進行排序：依票數降序排列
+                newLeaderboard.sort((a, b) => b.votes - a.votes);
+                window.currentLeaderboard = newLeaderboard;
+                renderLeaderboard();
+            }, (error) => {
+                console.error("Leaderboard snapshot error:", error);
+                document.getElementById('status').textContent = '人氣榜載入失敗。';
+            });
+        };
 
-            if (window.currentLeaderboard.length === 0) {
-                list.innerHTML = `<li class="p-4 bg-yellow-50 rounded-lg text-center text-gray-500 font-serif italic">目前沒有魔法獲得蒐藏票數。</li>`;
-                return;
-            }
+        // 渲染即時人氣榜
+        const renderLeaderboard = () => {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
 
-            window.currentLeaderboard.forEach((card, index) => {
-                const li = document.createElement('li');
-                
-                // 根據排名設置樣式
-                let rankStyle = 'bg-gray-50 text-gray-700';
-                if (index === 0) {
-                    rankStyle = 'bg-amber-100 text-amber-900 border-l-4 border-amber-500 font-extrabold';
-                } else if (index === 1) {
-                    rankStyle = 'bg-gray-200 text-gray-800 border-l-4 border-gray-400 font-bold';
-                } else if (index === 2) {
-                    rankStyle = 'bg-orange-100 text-orange-800 border-l-4 border-orange-300 font-semibold';
-                }
+            if (window.currentLeaderboard.length === 0) {
+                list.innerHTML = `<li class="p-4 bg-yellow-50 rounded-lg text-center text-gray-500 font-serif italic">目前沒有魔法獲得蒐藏票數。</li>`;
+                return;
+            }
 
-                li.className = `p-4 mb-3 rounded-lg flex justify-between items-center shadow-md ${rankStyle} font-serif`;
-                
-                li.innerHTML = `
-                    <div class="flex items-center space-x-4 overflow-hidden">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-300 font-mono text-sm">${index + 1}</span>
-                        <span class="truncate">${card.title}</span>
-                    </div>
-                    <span class="text-xl font-mono text-red-500">${card.votes} <span class="text-sm">票</span></span>
-                `;
-                list.appendChild(li);
-            });
-        };
+            window.currentLeaderboard.forEach((card, index) => {
+                const li = document.createElement('li');
+                
+                // 根據排名設置樣式
+                let rankStyle = 'bg-gray-50 text-gray-700';
+                if (index === 0) {
+                    rankStyle = 'bg-amber-100 text-amber-900 border-l-4 border-amber-500 font-extrabold';
+                } else if (index === 1) {
+                    rankStyle = 'bg-gray-200 text-gray-800 border-l-4 border-gray-400 font-bold';
+                } else if (index === 2) {
+                    rankStyle = 'bg-orange-100 text-orange-800 border-l-4 border-orange-300 font-semibold';
+                }
 
-        // 自定義彈出提示框 (取代 alert/confirm)
-        const alertUser = (message, isError = false) => {
-            const alertBox = document.getElementById('custom-alert');
-            const alertMessage = document.getElementById('alert-message');
-            alertMessage.textContent = message;
-            
-            alertBox.classList.remove('opacity-0', 'pointer-events-none', 'bg-green-500', 'bg-red-500');
-            alertBox.classList.add('opacity-100', isError ? 'bg-red-500' : 'bg-green-500');
+                li.className = `p-4 mb-3 rounded-lg flex justify-between items-center shadow-md ${rankStyle} font-serif`;
+                
+                li.innerHTML = `
+                    <div class="flex items-center space-x-4 overflow-hidden">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-300 font-mono text-sm">${index + 1}</span>
+                        <span class="truncate">${card.title}</span>
+                    </div>
+                    <span class="text-xl font-mono text-red-500">${card.votes} <span class="text-sm">票</span></span>
+                `;
+                list.appendChild(li);
+            });
+        };
 
-            setTimeout(() => {
-                alertBox.classList.add('opacity-0', 'pointer-events-none');
-                alertBox.classList.remove('opacity-100');
-            }, 3000);
-        };
-        
-        // -----------------------------------------------------
-        // 卡片渲染與滑動邏輯
-        // -----------------------------------------------------
-        
-        /**
-        * 根據資料建立一個卡片 DOM 元素
-        */
-        function createCard(spell) {
-            const card = document.createElement('div');
-            card.className = 'spell-card';
-            card.setAttribute('data-id', spell.id);
-            
-            card.innerHTML = `
-                <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden">
-                    ${spell.icon}
-                </div>
-                <div class="mt-4 text-center border-t border-gray-200 pt-4">
-                    <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
-                    <p class="text-sm text-gray-600 mt-3 spell-description">${spell.description}</p>
-                </div>
-            `;
-            return card;
-        }
+        // 自定義彈出提示框 (取代 alert/confirm)
+        const alertUser = (message, isError = false) => {
+            const alertBox = document.getElementById('custom-alert');
+            const alertMessage = document.getElementById('alert-message');
+            alertMessage.textContent = message;
+            
+            alertBox.classList.remove('opacity-0', 'pointer-events-none', 'bg-green-500', 'bg-red-500');
+            alertBox.classList.add('opacity-100', isError ? 'bg-red-500' : 'bg-green-500');
 
-        /**
-        * 渲染卡片堆疊
-        */
-        function renderCardStack() {
-            stack.innerHTML = '';
-            
-            // 渲染前 3 張卡片以建立堆疊視覺效果
-            for (let i = 0; i < 3; i++) {
-                let index = (window.currentCardIndex + i) % window.spellData.length;
-                const spell = window.spellData[index];
-                
-                if (spell) {
-                    const card = createCard(spell);
-                    // 為了讓 CSS 的 :nth-child(2) 和 :nth-child(3) 樣式正確應用，
-                    // DOM 中的第一個元素應該是最頂層的卡片 (i=0)。
-                    // 由於 i 是從 0, 1, 2 遞增，我們使用 appendChild 或 insertBefore(card, stack.lastChild) 來保持正確的視覺層次。
+            setTimeout(() => {
+                alertBox.classList.add('opacity-0', 'pointer-events-none');
+                alertBox.classList.remove('opacity-100');
+            }, 3000);
+        };
+        
+        // -----------------------------------------------------
+        // 卡片渲染與滑動邏輯 (已修正堆疊順序)
+        // -----------------------------------------------------
+        
+        /**
+        * 根據資料建立一個卡片 DOM 元素
+        */
+        function createCard(spell) {
+            const card = document.createElement('div');
+            card.className = 'spell-card';
+            card.setAttribute('data-id', spell.id);
+            
+            card.innerHTML = `
+                <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden">
+                    ${spell.icon}
+                </div>
+                <div class="mt-4 text-center border-t border-gray-200 pt-4">
+                    <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
+                    <p class="text-sm text-gray-600 mt-3 spell-description">${spell.description}</p>
+                </div>
+            `;
+            return card;
+        }
+
+        /**
+        * 渲染卡片堆疊 - 修正了卡片插入順序
+        */
+        function renderCardStack() {
+            stack.innerHTML = '';
+            
+            // 渲染前 3 張卡片以建立堆疊視覺效果
+            for (let i = 0; i < 3; i++) {
+                let index = (window.currentCardIndex + i) % window.spellData.length;
+                const spell = window.spellData[index];
+                
+                if (spell) {
+                    const card = createCard(spell);
+                    
+                    // **核心修正點：確保 DOM 順序與視覺層次一致**
+                    // i=0 是最頂層卡片，應該是 DOM 中的第一個 child。
+                    // i=1 是第二層卡片，是 DOM 中的第二個 child (適用 nth-child(2))。
                     stack.appendChild(card); 
 
-                    // i=0 始終是當前卡片，它在 DOM 中是第一個 child
+                    // 最上層的卡片 (i=0) 獲得 ID 以便蒐藏按鈕使用
                     if (i === 0) {
                         currentCard = card;
-                        // 賦予 ID 以便 collectCard 查找
                         card.id = 'current-active-card';
                     }
-                }
-            }
-        }
-        
-        /**
-        * 導航到下一張或上一張卡片
-        * @param {number} direction - 1 為下一張 (右按鈕), -1 為上一張 (左按鈕)
-        */
-        window.navigateCard = (direction) => { // 讓它可以在 HTML 中被調用
-            let nextIndex = window.currentCardIndex + direction;
+                }
+            }
+        }
+        
+        /**
+        * 導航到下一張或上一張卡片
+        * @param {number} direction - 1 為下一張 (右按鈕), -1 為上一張 (左按鈕)
+        */
+        window.navigateCard = (direction) => { // 讓它可以在 HTML 中被調用
+            let nextIndex = window.currentCardIndex + direction;
 
-            if (nextIndex >= window.spellData.length) {
-                nextIndex = 0; // 循環到開頭
-            } else if (nextIndex < 0) {
-                nextIndex = window.spellData.length - 1; // 循環到末尾
-            }
-            
-            window.currentCardIndex = nextIndex;
-            renderCardStack();
-        }
+            if (nextIndex >= window.spellData.length) {
+                nextIndex = 0; // 循環到開頭
+            } else if (nextIndex < 0) {
+                nextIndex = window.spellData.length - 1; // 循環到末尾
+            }
+            
+            window.currentCardIndex = nextIndex;
+            renderCardStack();
+        }
 
-        // 啟動應用
-        window.onload = initFirebase;
-    </script>
+        // 啟動應用
+        window.onload = initFirebase;
+    </script>
 </head>
 <body class="bg-gradient-to-br from-gray-100 via-yellow-50 to-amber-100 text-gray-800 flex flex-col items-center min-h-screen p-4 overflow-x-hidden">
 
@@ -565,6 +565,7 @@
 
 </body>
 </html>
+
 
 
 
