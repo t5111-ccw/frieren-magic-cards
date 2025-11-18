@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>芙莉蓮的民間魔法與人氣榜</title>
-    <!-- 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 設置襯線字體（Serif），使其看起來更像魔導書。 */
@@ -32,16 +31,16 @@
             flex-direction: column;
             padding: 2rem; /* p-8 */
             
-            /* 4. 防止拖曳時選取文字 */
+            /* 4. 防止選取文字 */
             user-select: none;
             
-            /* 5. 設置過渡動畫 (用於放手時的歸位) */
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 使用彈性動畫 */
+            /* 5. 設置過渡動畫 (僅用於卡片切換後的堆疊歸位) */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 
-            /* 6. 設置 cursor 樣式 */
-            cursor: grab;
+            /* 6. 設置 cursor 樣式 (雖然滑動功能已移除，但保留 grab 視覺效果) */
+            cursor: default; 
             
-            /* 7. 確保卡片內容在拖曳時清晰 */
+            /* 7. 確保卡片內容在頂層清晰 */
             z-index: 10;
         }
         
@@ -67,13 +66,6 @@
             z-index: -5;
         }
 
-        /* 當卡片被拖曳時的樣式 */
-        .card-stack .spell-card.dragging {
-            transition: none; /* 拖曳時移除動畫，確保即時反饋 */
-            cursor: grabbing;
-            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.3); /* 拖曳時陰影更深 */
-        }
-        
         /* 卡片內文樣式 */
         .spell-description {
             height: 100px; /* 固定高度 */
@@ -94,20 +86,19 @@
             background: #fef3c7;
         }
     </style>
-    <!-- 載入 Firebase SDKs -->
     <script type="module">
-        self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";//chatgpt建議寫這個
+        self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, getDoc, runTransaction, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-       //setLogLevel('debug');//chatgpt說這是舊版無效寫法 // 啟用 Firebase 偵錯日誌
         // --- 全域變數 ---
         window.firebaseApp = null;
         window.db = null;
         window.auth = null;
         window.userId = null;
+        window.sessionId = null; // **NEW: 每次講座的唯一 ID**
         window.currentCardIndex = 0;
         window.currentLeaderboard = [];
         window.spellData = []; // 用於儲存要循環的卡片資料
@@ -194,21 +185,26 @@
 
         // --- 2. 變數與 DOM 元素定義 ---
         const stack = document.getElementById('card-stack');
-        let isDragging = false;
-        let startX = 0;
-        let currentCard = null; // 當前正在互動的 DOM 卡片
+        let currentCard = null; // 當前正在顯示的 DOM 卡片
 
         // -----------------------------------------------------
         // Firebase 與 Firestore 邏輯
         // -----------------------------------------------------
+
+        /**
+        * **NEW** 取得當前講座的 Firestore 路徑
+        * 這樣每次載入網頁都會使用不同的路徑，實現數據重置。
+        */
+        const getFirestorePath = () => {
+            // 使用 sessions/[唯一 ID]/magic_cards 來隔離數據
+            return `sessions/${window.sessionId}/magic_cards`; 
+        }
 
         // Firebase 初始化與認證
         const initFirebase = async () => {
             try {
                 // -------------------------------------------------------------------
                 // ** 部署修正：這是您必須填入自己 Firebase 配置的地方 **
-                // 如果您在 Canvas 以外的環境運行，請將此處替換為您專案的實際配置。
-                // 如果您在 Canvas 內運行，這裡會被 __firebase_config 覆蓋。
                 const YOUR_FIREBASE_CONFIG = {
                     apiKey: "AIzaSyBYWpbdDJ7mV1Rj59HaSMKV-uyp1hrRzP0", // <-- 請填入您的 API Key
                     authDomain: "frieren-magic-cards.firebaseapp.com", // <-- 請填入您的 Auth Domain (例如: your-project-id.firebaseapp.com)
@@ -220,14 +216,11 @@
                 };
                 // -------------------------------------------------------------------
 
-                // 讀取全域提供的設定和 Token
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                 
-                // 優先使用 Canvas 提供的配置，如果沒有（即在外部部署），則使用手動填入的配置
                 let firebaseConfig = YOUR_FIREBASE_CONFIG;
                 if (typeof __firebase_config !== 'undefined') {
-                    // 確保只在 __firebase_config 存在且非空時使用它
                     const canvasConfig = JSON.parse(__firebase_config);
                     if (Object.keys(canvasConfig).length > 0) {
                         firebaseConfig = canvasConfig;
@@ -252,14 +245,22 @@
 
                 // 檢查登入狀態
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
-                document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...';
+                window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
+
+                document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...'; // 階段一狀態
 
                 window.spellData = ORIGINAL_SPELL_DATA; // 載入卡片資料
                 await setupInitialCards();
                 setupRealtimeLeaderboard();
                 renderCardStack();
-                // **加入這行新的程式碼來清除狀態**
-                document.getElementById('status').textContent = '卡片及人氣榜已準備就緒！';
+                
+                // 載入完成，顯示成功訊息並設定計時器清除
+                document.getElementById('status').textContent = '成功！芙莉蓮的魔法書已開啟。';
+                setTimeout(() => {
+                    document.getElementById('status').textContent = ''; // 3 秒後清除訊息
+                }, 3000);
+                // -----------------------------------------------
+
             } catch (error) {
                 console.error("Firebase initialization or sign-in failed:", error);
                 // 顯示特定的錯誤訊息，有助於除錯
@@ -270,15 +271,15 @@
         // 設置初始卡片（如果不存在）
         const setupInitialCards = async () => {
             if (!window.db) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // 使用新的 collection path: artifacts/{appId}/public/data/frieren_magic_cards
-            const publicDataPath = `artifacts/${appId}/public/data/frieren_magic_cards`;
+            
+            // **修正點：使用 session-specific 路徑**
+            const sessionDataPath = getFirestorePath();
             
             const batch = writeBatch(window.db);
             let needsUpdate = false;
 
             for (const card of window.spellData) {
-                const docRef = doc(window.db, publicDataPath, card.id);
+                const docRef = doc(window.db, sessionDataPath, card.id); // <-- 使用新路徑
                 const docSnap = await getDoc(docRef);
 
                 if (!docSnap.exists()) {
@@ -300,8 +301,8 @@
         };
 
         /**
-         * 點擊蒐藏（增加票數）
-         */
+        * 點擊蒐藏（增加票數）
+        */
         window.collectCard = async () => {
             if (!window.db || !window.auth || window.spellData.length === 0) {
                 alertUser('請稍候，系統仍在初始化...');
@@ -309,9 +310,10 @@
             }
 
             const card = window.spellData[window.currentCardIndex];
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // 使用新的 collection path: artifacts/{appId}/public/data/frieren_magic_cards
-            const docRef = doc(window.db, `artifacts/${appId}/public/data/frieren_magic_cards`, card.id);
+            
+            // **修正點：使用 session-specific 路徑**
+            const sessionDataPath = getFirestorePath();
+            const docRef = doc(window.db, sessionDataPath, card.id); // <-- 使用新路徑
 
             try {
                 // 使用 Transaction 確保票數計數的原子性
@@ -341,12 +343,11 @@
         const setupRealtimeLeaderboard = () => {
             if (!window.db) return;
             
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // 使用新的 collection path: artifacts/{appId}/public/data/frieren_magic_cards
-            const publicDataPath = `artifacts/${appId}/public/data/frieren_magic_cards`;
+            // **修正點：使用 session-specific 路徑**
+            const sessionDataPath = getFirestorePath();
             
             const q = query(
-                collection(window.db, publicDataPath),
+                collection(window.db, sessionDataPath), // <-- 使用新路徑
                 where("votes", ">", 0), // 凡是 0 票的魔法卡，都不顯示
             );
 
@@ -427,8 +428,8 @@
         // -----------------------------------------------------
         
         /**
-         * 根據資料建立一個卡片 DOM 元素
-         */
+        * 根據資料建立一個卡片 DOM 元素
+        */
         function createCard(spell) {
             const card = document.createElement('div');
             card.className = 'spell-card';
@@ -447,8 +448,8 @@
         }
 
         /**
-         * 渲染卡片堆疊
-         */
+        * 渲染卡片堆疊
+        */
         function renderCardStack() {
             stack.innerHTML = '';
             
@@ -462,19 +463,18 @@
                     // 確保卡片是插入在 DOM 堆疊的底部 (CSS 讓它視覺上在頂部)
                     stack.insertBefore(card, stack.firstChild);
 
-                    // 最上層的卡片不再需要互動監聽，因為您已註釋掉了 addInteractionListeners
-            if (i === 0) {
-                currentCard = card;
-                // 刪除或註釋掉原本的 addInteractionListeners(currentCard);
+                    // 最上層的卡片 (DOM 中的最後一個 child) 獲得互動事件
+                    if (i === 0) {
+                        currentCard = card;
                     }
                 }
             }
         }
         
         /**
-         * 導航到下一張或上一張卡片
-         * @param {number} direction - 1 為下一張 (左滑/右按鈕), -1 為上一張 (右滑/左按鈕)
-         */
+        * 導航到下一張或上一張卡片
+        * @param {number} direction - 1 為下一張 (右按鈕), -1 為上一張 (左按鈕)
+        */
         window.navigateCard = (direction) => { // 讓它可以在 HTML 中被調用
             let nextIndex = window.currentCardIndex + direction;
 
@@ -488,133 +488,28 @@
             renderCardStack();
         }
 
-        /**
-         * 為卡片添加互動監聽 (拖曳/滑動)
-         */
-        //function addInteractionListeners(card) {
-            //if (!card) return;
-            //card.addEventListener('mousedown', onDragStart);
-            //card.addEventListener('touchstart', onDragStart, { passive: true });
-        //}
-
-        /**
-         * 拖曳開始
-         */
-        //function onDragStart(e) {
-            //if (e.currentTarget !== stack.lastChild) return;
-            //if (isDragging) return;
-            
-            //isDragging = true;
-            
-            //currentCard = e.currentTarget;
-            //currentCard.classList.add('dragging');
-            
-            //startX = e.clientX || e.touches[0].clientX;
-            
-            //window.addEventListener('mousemove', onDragMove);
-            //window.addEventListener('touchmove', onDragMove, { passive: false });
-            
-            //window.addEventListener('mouseup', onDragEnd);
-            //window.addEventListener('touchend', onDragEnd);
-        //}
-
-        /**
-         * 拖曳中
-         */
-        //function onDragMove(e) {
-          //  if (!isDragging || !currentCard) return;
-
-            //const currentX = e.clientX || e.touches[0].clientX;
-            //const deltaX = currentX - startX;
-            
-            // 根據拖曳距離旋轉卡片 (微小的視覺效果)
-            //const rotate = deltaX / 20; 
-            
-            //currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotate}deg)`;
-        //}
-
-        /**
-         * 拖曳結束
-         */
-        //function onDragEnd(e) {
-          //  if (!isDragging || !currentCard) return;
-          //  isDragging = false;
-
-            // 移除全域監聽
-            //window.removeEventListener('mousemove', onDragMove);
-            //window.removeEventListener('touchmove', onDragMove);
-            //window.removeEventListener('mouseup', onDragEnd);
-            //window.removeEventListener('touchend', onDragEnd);
-
-            //const finalX = e.clientX || e.changedTouches[0].clientX;
-            //const deltaX = finalX - startX;
-            
-            //const threshold = currentCard.offsetWidth / 3;
-
-            //if (Math.abs(deltaX) > threshold) {
-                // 滑動成功：執行卡片切換動畫
-              //  const direction = deltaX > 0 ? -1 : 1; // 右滑 (-1) 是上一張, 左滑 (1) 是下一張
-                
-              //  const cardToMove = currentCard;
-              //  cardToMove.classList.remove('dragging');
-                
-                // 快速飛出動畫
-              //  cardToMove.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
-              //  cardToMove.style.transform = `translateX(${deltaX > 0 ? '500px' : '-500px'}) rotate(${deltaX / 10}deg)`;
-              //  cardToMove.style.opacity = '0';
-                
-                // 動畫完成後更新狀態和重新渲染
-              //  setTimeout(() => {
-              //      navigateCard(direction);
-              //  }, 200);
-
-           // } else {
-                // 滑動失敗：歸位
-             //   snapBack();
-            //}
-        //}
-
-        /**
-         * 卡片歸位動畫
-         */
-        function snapBack() {
-            if (currentCard) {
-                currentCard.classList.remove('dragging');
-                currentCard.style.transform = ''; // 清除 transform 樣式，CSS transition 會自動歸位
-                currentCard = null;
-            }
-        }
-
         // 啟動應用
         window.onload = initFirebase;
     </script>
 </head>
 <body class="bg-gradient-to-br from-gray-100 via-yellow-50 to-amber-100 text-gray-800 flex flex-col items-center min-h-screen p-4 overflow-x-hidden">
 
-    <!-- 頂部標題 -->
     <div class="text-center mb-6 p-4 bg-white/70 rounded-xl shadow-xl backdrop-blur-sm border-b-2 border-amber-300">
         <h1 class="text-4xl font-extrabold text-amber-900 drop-shadow-md">芙莉蓮的民間魔法</h1>
         <p class="text-gray-600 mt-2 font-serif italic">輕觸左右箭頭來切換，點擊蒐藏魔法來為喜歡的魔法投票！</p>
     </div>
 
-    <!-- Overall Container -->
     <div class="w-full max-w-7xl flex flex-col items-center md:flex-row md:items-start gap-8 flex-grow">
         
-        <!-- Left Column: Card Swiper & Collect Button (md:w-3/5) -->
         <div class="md:w-3/5 w-full flex flex-col items-center p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-amber-300 min-h-[500px]">
             
-            <!-- 狀態顯示 -->
             <p id="status" class="text-sm text-gray-500 mb-4 h-4">正在初始化 Firebase...</p>
 
-            <!-- Card and Navigation Container (新增的導覽容器) -->
             <div class="relative flex items-center justify-center w-full max-w-lg mt-4 mb-8">
-                <!-- Left Button (Previous) -->
                 <button onclick="navigateCard(-1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <!-- Chevron Left Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 </button>
 
-                <!-- Card Stack Container -->
                 <div id="card-stack" class="card-stack relative w-64 h-80 sm:w-72 sm:h-96 max-w-sm mx-4">
                     <div class="spell-card flex flex-col items-center justify-center text-center text-gray-500">
                         <h2 class="text-xl font-bold">正在載入卡片...</h2>
@@ -622,24 +517,19 @@
                     </div>
                 </div>
 
-                <!-- Right Button (Next) -->
                 <button onclick="navigateCard(1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <!-- Chevron Right Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </button>
             </div>
 
 
-            <!-- Collect Button -->
             <button id="collect-btn" onclick="collectCard()" class="action-button bg-pink-200 hover:bg-pink-300 text-pink-700 font-extrabold rounded-full p-4 px-8 shadow-xl text-lg flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                <!-- Heart Icon for Collect -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 <span>蒐藏這項魔法</span>
             </button>
             <p class="mt-4 text-sm text-gray-500">您可以使用左右箭頭來切換魔法。</p>
         </div>
 
-        <!-- Right Column: Real-Time Leaderboard (md:w-2/5) -->
         <div class="md:w-2/5 w-full p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-yellow-200">
             <h2 class="text-3xl font-extrabold text-red-700 border-b-4 border-red-200 pb-3 mb-6 font-serif">即時人氣榜</h2>
             <div id="leaderboard" class="h-full max-h-[600px] overflow-y-auto">
@@ -651,17 +541,9 @@
 
     </div>
     
-    <!-- Custom Alert Box (取代 alert/confirm) -->
     <div id="custom-alert" class="fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 pointer-events-none transform translate-y-0 z-50">
         <span id="alert-message" class="font-semibold"></span>
     </div>
 
 </body>
-
-
 </html>
-
-
-
-
-
