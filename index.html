@@ -308,36 +308,39 @@
                 alertUser('請稍候，系統仍在初始化...');
                 return;
             }
+            // 💥 NEW: 從 DOM 中獲取最頂層卡片的資料
+    const activeCardDom = document.getElementById('current-active-card');
+    const cardIdToUpdate = activeCardDom ? activeCardDom.getAttribute('data-id') : null;
+    
+    if (!cardIdToUpdate) {
+        alertUser('錯誤：找不到要蒐藏的魔法卡 ID。', true);
+        return;
+    }
+           // 取得完整的卡片物件，以便獲取 title (用於 alert)
+    const card = window.spellData.find(c => c.id === cardIdToUpdate);
 
-            const card = window.spellData[window.currentCardIndex];
+    // 確保 getFirestorePath() 函式已經使用 'frieren_magic_cards'
+    const sessionDataPath = getFirestorePath(); 
+    const docRef = doc(window.db, sessionDataPath, cardIdToUpdate); // <-- 使用 DOM 傳遞的 ID
+
+    try {
+        await runTransaction(window.db, async (transaction) => {
+            const cardDoc = await transaction.get(docRef);
+            // ... (後續的 transaction 邏輯不變)
             
-            // **修正點：使用 session-specific 路徑**
-            const sessionDataPath = getFirestorePath();
-            const docRef = doc(window.db, sessionDataPath, card.id); // <-- 使用新路徑
-
-            try {
-                // 使用 Transaction 確保票數計數的原子性
-                await runTransaction(window.db, async (transaction) => {
-                    const cardDoc = await transaction.get(docRef);
-
-                    if (cardDoc.exists()) {
-                        const newVotes = (cardDoc.data().votes || 0) + 1;
-                        transaction.update(docRef, { votes: newVotes });
-                        alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${newVotes}。`);
-                    } else {
-                         // 數據缺失時，創建並設定初始票數 1
-                        transaction.set(docRef, {
-                            title: card.title,
-                            votes: 1
-                        });
-                        alertUser(`成功蒐藏！已為「${card.title}」新增一票。`);
-                    }
-                });
-            } catch (error) {
-                console.error("Collecting card failed:", error);
-                alertUser(`蒐藏失敗：${error.message}`, true);
+            if (cardDoc.exists()) {
+                const newVotes = (cardDoc.data().votes || 0) + 1;
+                transaction.update(docRef, { votes: newVotes });
+                alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${newVotes}。`);
+            } else {
+                // ... 數據缺失時，創建並設定初始票數 1 ...
             }
-        };
+        });
+    } catch (error) {
+        console.error("Collecting card failed:", error);
+        alertUser(`蒐藏失敗：${error.message}`, true);
+    }
+};
 
         // 設置即時人氣榜監聽器
         const setupRealtimeLeaderboard = () => {
@@ -466,6 +469,8 @@
                     // 最上層的卡片 (DOM 中的最後一個 child) 獲得互動事件
                     if (i === 0) {
                         currentCard = card;
+                        // 💥 NEW: 給最上層的卡片一個特定的 ID
+                card.id = 'current-active-card';
                     }
                 }
             }
@@ -547,4 +552,5 @@
 
 </body>
 </html>
+
 
