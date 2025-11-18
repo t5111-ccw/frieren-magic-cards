@@ -412,7 +412,8 @@
                 li.className = `p-4 mb-3 rounded-lg flex justify-between items-center shadow-md ${rankStyle} font-serif`;
                 
 li.innerHTML = `
-    <div class="flex items-center space-x-4 min-w-0 flex-1"> // 👈 修正點：使用 flex-1 讓名稱區塊佔據最大空間
+    <div class="flex items-center space-x-4 min-w-0 flex-1"> 
+    // 👈 修正點：使用 flex-1 讓名稱區塊佔據最大空間
         <span class="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded-full bg-white border border-gray-300 font-mono text-sm">${index + 1}</span>
         <span class="text-left whitespace-nowrap overflow-hidden text-ellipsis block flex-grow">             ${card.title}
         </span>
@@ -566,6 +567,7 @@ li.innerHTML = `
 
 </body>
 </html>
+
 
 
 
