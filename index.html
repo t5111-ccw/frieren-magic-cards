@@ -472,9 +472,9 @@
         
         /**
          * 導航到下一張或上一張卡片
-         * @param {number} direction - 1 為下一張 (左滑), -1 為上一張 (右滑)
+         * @param {number} direction - 1 為下一張 (左滑/右按鈕), -1 為上一張 (右滑/左按鈕)
          */
-        function navigateCard(direction) {
+        window.navigateCard = (direction) => { // 讓它可以在 HTML 中被調用
             let nextIndex = window.currentCardIndex + direction;
 
             if (nextIndex >= window.spellData.length) {
@@ -605,21 +605,37 @@
             <!-- 狀態顯示 -->
             <p id="status" class="text-sm text-gray-500 mb-4 h-4">正在初始化 Firebase...</p>
 
-            <!-- Card Stack Container -->
-            <div id="card-stack" class="card-stack relative w-64 h-80 sm:w-72 sm:h-96 max-w-sm">
-                <div class="spell-card flex flex-col items-center justify-center text-center text-gray-500">
-                    <h2 class="text-xl font-bold">正在載入卡片...</h2>
-                    <p class="mt-2 text-sm">請稍候</p>
+            <!-- Card and Navigation Container (新增的導覽容器) -->
+            <div class="relative flex items-center justify-center w-full max-w-lg mt-4 mb-8">
+                <!-- Left Button (Previous) -->
+                <button onclick="navigateCard(-1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <!-- Chevron Left Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+
+                <!-- Card Stack Container -->
+                <div id="card-stack" class="card-stack relative w-64 h-80 sm:w-72 sm:h-96 max-w-sm mx-4">
+                    <div class="spell-card flex flex-col items-center justify-center text-center text-gray-500">
+                        <h2 class="text-xl font-bold">正在載入卡片...</h2>
+                        <p class="mt-2 text-sm">請稍候</p>
+                    </div>
                 </div>
+
+                <!-- Right Button (Next) -->
+                <button onclick="navigateCard(1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <!-- Chevron Right Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
             </div>
 
+
             <!-- Collect Button -->
-            <button id="collect-btn" onclick="collectCard()" class="action-button bg-pink-200 hover:bg-pink-300 text-pink-700 font-extrabold rounded-full p-4 px-8 shadow-xl text-lg flex items-center space-x-3 mt-12 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button id="collect-btn" onclick="collectCard()" class="action-button bg-pink-200 hover:bg-pink-300 text-pink-700 font-extrabold rounded-full p-4 px-8 shadow-xl text-lg flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed">
                 <!-- Heart Icon for Collect -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 <span>蒐藏這項魔法</span>
             </button>
-            <p class="mt-4 text-sm text-gray-500">向左（下一張）或右（上一張）滑動卡片即可切換。</p>
+            <p class="mt-4 text-sm text-gray-500">您可以使用左右箭頭按鈕或滑動卡片來切換魔法。</p>
         </div>
 
         <!-- Right Column: Real-Time Leaderboard (md:w-2/5) -->
@@ -643,6 +659,3 @@
 
 
 </html>
-
-
-
