@@ -96,13 +96,13 @@
     </style>
     <!-- 載入 Firebase SDKs -->
     <script type="module">
-        
+        self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";//chatgpt建議寫這個
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, getDoc, runTransaction, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-       setLogLevel('debug'); // 啟用 Firebase 偵錯日誌
+       //setLogLevel('debug');//chatgpt說這是舊版無效寫法 // 啟用 Firebase 偵錯日誌
         // --- 全域變數 ---
         window.firebaseApp = null;
         window.db = null;
@@ -643,5 +643,6 @@
 
 
 </html>
+
 
 
