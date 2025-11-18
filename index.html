@@ -461,10 +461,10 @@
                     // 確保卡片是插入在 DOM 堆疊的底部 (CSS 讓它視覺上在頂部)
                     stack.insertBefore(card, stack.firstChild);
 
-                    // 最上層的卡片 (DOM 中的最後一個 child) 獲得互動事件
-                    if (i === 0) {
-                        currentCard = card;
-                        addInteractionListeners(currentCard);
+                    // 最上層的卡片不再需要互動監聽，因為您已註釋掉了 addInteractionListeners
+            if (i === 0) {
+                currentCard = card;
+                // 刪除或註釋掉原本的 addInteractionListeners(currentCard);
                     }
                 }
             }
@@ -659,6 +659,7 @@
 
 
 </html>
+
 
 
 
