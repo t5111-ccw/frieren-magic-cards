@@ -490,88 +490,88 @@
         /**
          * 為卡片添加互動監聽 (拖曳/滑動)
          */
-        function addInteractionListeners(card) {
-            if (!card) return;
-            card.addEventListener('mousedown', onDragStart);
-            card.addEventListener('touchstart', onDragStart, { passive: true });
-        }
+        //function addInteractionListeners(card) {
+            //if (!card) return;
+            //card.addEventListener('mousedown', onDragStart);
+            //card.addEventListener('touchstart', onDragStart, { passive: true });
+        //}
 
         /**
          * 拖曳開始
          */
-        function onDragStart(e) {
-            if (e.currentTarget !== stack.lastChild) return;
-            if (isDragging) return;
+        //function onDragStart(e) {
+            //if (e.currentTarget !== stack.lastChild) return;
+            //if (isDragging) return;
             
-            isDragging = true;
+            //isDragging = true;
             
-            currentCard = e.currentTarget;
-            currentCard.classList.add('dragging');
+            //currentCard = e.currentTarget;
+            //currentCard.classList.add('dragging');
             
-            startX = e.clientX || e.touches[0].clientX;
+            //startX = e.clientX || e.touches[0].clientX;
             
-            window.addEventListener('mousemove', onDragMove);
-            window.addEventListener('touchmove', onDragMove, { passive: false });
+            //window.addEventListener('mousemove', onDragMove);
+            //window.addEventListener('touchmove', onDragMove, { passive: false });
             
-            window.addEventListener('mouseup', onDragEnd);
-            window.addEventListener('touchend', onDragEnd);
-        }
+            //window.addEventListener('mouseup', onDragEnd);
+            //window.addEventListener('touchend', onDragEnd);
+        //}
 
         /**
          * 拖曳中
          */
-        function onDragMove(e) {
-            if (!isDragging || !currentCard) return;
+        //function onDragMove(e) {
+          //  if (!isDragging || !currentCard) return;
 
-            const currentX = e.clientX || e.touches[0].clientX;
-            const deltaX = currentX - startX;
+            //const currentX = e.clientX || e.touches[0].clientX;
+            //const deltaX = currentX - startX;
             
             // 根據拖曳距離旋轉卡片 (微小的視覺效果)
-            const rotate = deltaX / 20; 
+            //const rotate = deltaX / 20; 
             
-            currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotate}deg)`;
-        }
+            //currentCard.style.transform = `translateX(${deltaX}px) rotate(${rotate}deg)`;
+        //}
 
         /**
          * 拖曳結束
          */
-        function onDragEnd(e) {
-            if (!isDragging || !currentCard) return;
-            isDragging = false;
+        //function onDragEnd(e) {
+          //  if (!isDragging || !currentCard) return;
+          //  isDragging = false;
 
             // 移除全域監聽
-            window.removeEventListener('mousemove', onDragMove);
-            window.removeEventListener('touchmove', onDragMove);
-            window.removeEventListener('mouseup', onDragEnd);
-            window.removeEventListener('touchend', onDragEnd);
+            //window.removeEventListener('mousemove', onDragMove);
+            //window.removeEventListener('touchmove', onDragMove);
+            //window.removeEventListener('mouseup', onDragEnd);
+            //window.removeEventListener('touchend', onDragEnd);
 
-            const finalX = e.clientX || e.changedTouches[0].clientX;
-            const deltaX = finalX - startX;
+            //const finalX = e.clientX || e.changedTouches[0].clientX;
+            //const deltaX = finalX - startX;
             
-            const threshold = currentCard.offsetWidth / 3;
+            //const threshold = currentCard.offsetWidth / 3;
 
-            if (Math.abs(deltaX) > threshold) {
+            //if (Math.abs(deltaX) > threshold) {
                 // 滑動成功：執行卡片切換動畫
-                const direction = deltaX > 0 ? -1 : 1; // 右滑 (-1) 是上一張, 左滑 (1) 是下一張
+              //  const direction = deltaX > 0 ? -1 : 1; // 右滑 (-1) 是上一張, 左滑 (1) 是下一張
                 
-                const cardToMove = currentCard;
-                cardToMove.classList.remove('dragging');
+              //  const cardToMove = currentCard;
+              //  cardToMove.classList.remove('dragging');
                 
                 // 快速飛出動畫
-                cardToMove.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
-                cardToMove.style.transform = `translateX(${deltaX > 0 ? '500px' : '-500px'}) rotate(${deltaX / 10}deg)`;
-                cardToMove.style.opacity = '0';
+              //  cardToMove.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in';
+              //  cardToMove.style.transform = `translateX(${deltaX > 0 ? '500px' : '-500px'}) rotate(${deltaX / 10}deg)`;
+              //  cardToMove.style.opacity = '0';
                 
                 // 動畫完成後更新狀態和重新渲染
-                setTimeout(() => {
-                    navigateCard(direction);
-                }, 200);
+              //  setTimeout(() => {
+              //      navigateCard(direction);
+              //  }, 200);
 
-            } else {
+           // } else {
                 // 滑動失敗：歸位
-                snapBack();
-            }
-        }
+             //   snapBack();
+            //}
+        //}
 
         /**
          * 卡片歸位動畫
@@ -659,5 +659,6 @@
 
 
 </html>
+
 
 
