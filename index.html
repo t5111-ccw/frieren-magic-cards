@@ -323,20 +323,24 @@
     const sessionDataPath = getFirestorePath(); 
     const docRef = doc(window.db, sessionDataPath, cardIdToUpdate); // <-- 使用 DOM 傳遞的 ID
 
-    try {
-        await runTransaction(window.db, async (transaction) => {
-            const cardDoc = await transaction.get(docRef);
-            // ... (後續的 transaction 邏輯不變)
-            
-            if (cardDoc.exists()) {
-                const newVotes = (cardDoc.data().votes || 0) + 1;
-                transaction.update(docRef, { votes: newVotes });
-                alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${newVotes}。`);
-            } else {
-                // ... 數據缺失時，創建並設定初始票數 1 ...
-            }
-        });
-    } catch (error) {
+ try {
+        await runTransaction(window.db, async (transaction) => {
+            const cardDoc = await transaction.get(docRef);
+            
+            if (cardDoc.exists()) {
+                const newVotes = (cardDoc.data().votes || 0) + 1;
+                transaction.update(docRef, { votes: newVotes });
+                alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${newVotes}。`);
+            } else {
+                // 💥 修正：卡片文檔不存在時，創建它並設定初始票數為 1
+                transaction.set(docRef, {
+                    title: card.title, // 從靜態資料中獲取 title
+                    votes: 1 
+                });
+                alertUser(`成功蒐藏！「${card.title}」是第一票！`);
+            }
+        });
+    } catch (error) {
         console.error("Collecting card failed:", error);
         alertUser(`蒐藏失敗：${error.message}`, true);
     }
@@ -552,5 +556,6 @@
 
 </body>
 </html>
+
 
 
