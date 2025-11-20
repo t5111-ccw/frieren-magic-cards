@@ -6,6 +6,13 @@
     <title>芙莉蓮的民間魔法與人氣榜</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 新增 CSS：確保 SVG 圖標能夠繼承顏色並佔據空間 */
+.spell-card svg {
+    width: 6rem; /* h-24 / w-24，可以讓圖標更顯眼 */
+    height: 6rem;
+    color: currentColor; /* 讓 SVG 繼承父層的顏色，使其顯示 */
+    stroke-width: 1.5; /* 確保描邊粗細一致 */
+}
         /* 設置襯線字體（Serif），使其看起來更像魔導書。 */
         body {
             font-family: 'Times New Roman', Georgia, serif, 'Noto Sans TC';
@@ -566,6 +573,7 @@ li.innerHTML = `
 
 </body>
 </html>
+
 
 
 
