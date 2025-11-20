@@ -458,13 +458,17 @@ li.innerHTML = `
             card.setAttribute('data-id', spell.id);
             
             card.innerHTML = `
-                <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden">
-                    ${spell.icon}
-                </div>
-                <div class="mt-4 text-center border-t border-gray-200 pt-4">
-                    <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
-                    <p class="text-sm text-gray-600 mt-3 spell-description">${spell.description}</p>
-                </div>
+                <div class="text-center pb-4">
+            <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
+        </div>
+
+        <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden spell-icon-container">
+            ${spell.icon}
+        </div>
+        
+        <div class="mt-4 text-center border-t border-gray-200 pt-4">
+            <p class="text-sm text-gray-600 mt-0 spell-description">${spell.description}</p>
+        </div>
             `;
             return card;
         }
@@ -573,6 +577,7 @@ li.innerHTML = `
 
 </body>
 </html>
+
 
 
 
