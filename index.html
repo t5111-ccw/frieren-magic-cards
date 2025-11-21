@@ -17,7 +17,10 @@
         body {
             font-family: 'Times New Roman', Georgia, serif, 'Noto Sans TC';
         }
-        
+        /* === 請新增或確保這段 CSS 存在！這是堆疊的關鍵 === */
+.card-stack {
+    position: relative; 
+}
         /* 提高堆疊中卡片的層次感和邊框細節 */
         .card-stack .spell-card {
             /* 1. 絕對定位，使卡片重疊 */
@@ -578,6 +581,7 @@ function createCard(spell) {
 
 </body>
 </html>
+
 
 
 
