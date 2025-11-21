@@ -1,99 +1,99 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>芙莉蓮的民間魔法與人氣榜</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* 新增 CSS：確保 SVG 圖標能夠繼承顏色並佔據空間 */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芙莉蓮的民間魔法與人氣榜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 新增 CSS：確保 SVG 圖標能夠繼承顏色並佔據空間 */
 .spell-card svg {
-    width: 6rem; /* h-24 / w-24，可以讓圖標更顯眼 */
-    height: 6rem;
-    color: currentColor; /* 讓 SVG 繼承父層的顏色，使其顯示 */
-    stroke-width: 1.5; /* 確保描邊粗細一致 */
+    width: 6rem; /* h-24 / w-24，可以讓圖標更顯眼 */
+    height: 6rem;
+    color: currentColor; /* 讓 SVG 繼承父層的顏色，使其顯示 */
+    stroke-width: 1.5; /* 確保描邊粗細一致 */
 }
-        /* 設置襯線字體（Serif），使其看起來更像魔導書。 */
-        body {
-            font-family: 'Times New Roman', Georgia, serif, 'Noto Sans TC';
-        }
-        
-        /* 提高堆疊中卡片的層次感和邊框細節 */
-        .card-stack .spell-card {
-            /* 1. 絕對定位，使卡片重疊 */
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* 設置襯線字體（Serif），使其看起來更像魔導書。 */
+        body {
+            font-family: 'Times New Roman', Georgia, serif, 'Noto Sans TC';
+        }
+        
+        /* 提高堆疊中卡片的層次感和邊框細節 */
+        .card-stack .spell-card {
+            /* 1. 絕對定位，使卡片重疊 */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
 
-            /* 2. 卡片外觀 */
-            background: white;
-            border-radius: 1.5rem; /* rounded-3xl */
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.2), 0 5px 10px -2px rgba(0, 0, 0, 0.05); /* 增強陰影 */
-            border: 4px solid #FCD34D; /* 淺金色邊框，增強魔法書質感 */
-            
-            /* 3. 內容排版 */
-            display: flex;
-            flex-direction: column;
-            padding: 2rem; /* p-8 */
-            
-            /* 4. 防止選取文字 */
-            user-select: none;
-            
-            /* 5. 設置過渡動畫 (僅用於卡片切換後的堆疊歸位) */
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            /* 2. 卡片外觀 */
+            background: white;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.2), 0 5px 10px -2px rgba(0, 0, 0, 0.05); /* 增強陰影 */
+            border: 4px solid #FCD34D; /* 淺金色邊框，增強魔法書質感 */
+            
+            /* 3. 內容排版 */
+            display: flex;
+            flex-direction: column;
+            padding: 2rem; /* p-8 */
+            
+            /* 4. 防止選取文字 */
+            user-select: none;
+            
+            /* 5. 設置過渡動畫 (僅用於卡片切換後的堆疊歸位) */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 
-            /* 6. 設置 cursor 樣式 (雖然滑動功能已移除，但保留 grab 視覺效果) */
-            cursor: default; 
-            
-            /* 7. 確保卡片內容在頂層清晰 */
-            z-index: 10;
-        }
-        
-        /* 堆疊中第二張卡片的樣式 */
-        .card-stack .spell-card:nth-child(2) {
-            transform: scale(0.95) translateY(15px);
-            z-index: 5;
-            opacity: 0.85;
-            border-color: #FED7AA; /* 次要卡片使用較淡的邊框色 */
-        }
-        
-        /* 第三張卡片 */
-        .card-stack .spell-card:nth-child(3) {
-            transform: scale(0.9) translateY(30px);
-            z-index: 0;
-            opacity: 0.7;
-            border-color: #FED7AA;
-        }
-        
-        /* 隱藏更後面的卡片 */
-        .card-stack .spell-card:nth-child(n+4) {
-            opacity: 0;
-            z-index: -5;
-        }
+            /* 6. 設置 cursor 樣式 (雖然滑動功能已移除，但保留 grab 視覺效果) */
+            cursor: default; 
+            
+            /* 7. 確保卡片內容在頂層清晰 */
+            z-index: 10;
+        }
+        
+        /* 堆疊中第二張卡片的樣式 */
+        .card-stack .spell-card:nth-child(2) {
+            transform: scale(0.95) translateY(15px);
+            z-index: 5;
+            opacity: 0.85;
+            border-color: #FED7AA; /* 次要卡片使用較淡的邊框色 */
+        }
+        
+        /* 第三張卡片 */
+        .card-stack .spell-card:nth-child(3) {
+            transform: scale(0.9) translateY(30px);
+            z-index: 0;
+            opacity: 0.7;
+            border-color: #FED7AA;
+        }
+        
+        /* 隱藏更後面的卡片 */
+        .card-stack .spell-card:nth-child(n+4) {
+            opacity: 0;
+            z-index: -5;
+        }
 
-        /* 卡片內文樣式 */
-        .spell-description {
-            height: 100px; /* 固定高度 */
-            overflow-y: auto; 
-            scrollbar-width: thin;
-            scrollbar-color: #9CA3AF #F3F4F6;
-        }
+        /* 卡片內文樣式 */
+        .spell-description {
+            height: 100px; /* 固定高度 */
+            overflow-y: auto; 
+            scrollbar-width: thin;
+            scrollbar-color: #9CA3AF #F3F4F6;
+        }
 
-        /* 人氣榜樣式 */
-        #leaderboard::-webkit-scrollbar {
-            width: 6px;
-        }
-        #leaderboard::-webkit-scrollbar-thumb {
-            background-color: #FCD34D;
-            border-radius: 3px;
-        }
-        #leaderboard::-webkit-scrollbar-track {
-            background: #fef3c7;
-        }
-    </style>
-   <script type="module">
+        /* 人氣榜樣式 */
+        #leaderboard::-webkit-scrollbar {
+            width: 6px;
+        }
+        #leaderboard::-webkit-scrollbar-thumb {
+            background-color: #FCD34D;
+            border-radius: 3px;
+        }
+        #leaderboard::-webkit-scrollbar-track {
+            background: #fef3c7;
+        }
+    </style>
+   <script type="module">
         self.FIREBASE_FIRESTORE_LOG_LEVEL = "debug";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -203,8 +203,8 @@
         * 這樣每次載入網頁都會使用不同的路徑，實現數據重置。
         */
         const getFirestorePath = () => {
-            // 使用 固定路徑
-            return `global/frieren_magic_cards`; 
+            // 使用 sessions/[唯一 ID]/magic_cards 來隔離數據
+            return `sessions/${window.sessionId}/frieren_magic_cards`; 
         }
 
         // Firebase 初始化與認證
@@ -252,7 +252,7 @@
 
                 // 檢查登入狀態
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
-               // window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
+                window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
 
                 document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...'; // 階段一狀態
 
@@ -343,16 +343,16 @@
                     } else {
                         // 情況二：文件不存在，創建新文件並設定初始票數 1
                         finalNewVotes = 1;
-                        transaction.set(docRef, { 
+                        transaction.set(docRef, { 
                             title: card.title, // 在此設定 title 以便排行榜能顯示
-                            votes: finalNewVotes 
+                            votes: finalNewVotes 
                         });
                     }
                 });
-                
+                
                 // 交易成功後才顯示提示
                 alertUser(`成功蒐藏！「${card.title}」的票數已更新為 ${finalNewVotes}。`);
-                
+                
             } catch (error) {
                 console.error("Collecting card failed:", error);
                 alertUser(`蒐藏失敗：${error.message}`, true);
@@ -419,14 +419,14 @@
                 li.className = `p-4 mb-3 rounded-lg flex justify-between items-center shadow-md ${rankStyle} font-serif`;
                 
 li.innerHTML = `
-                    <div class="flex items-center space-x-4 overflow-hidden">
-                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-300 font-mono text-sm">${index + 1}</span>
-                        <span class="truncate">${card.title}</span>
-                    </div>
-                    <span class="text-xl font-mono text-red-500">${card.votes} <span class="text-sm">票</span></span>
-                `;
-                list.appendChild(li);
-            });
+                    <div class="flex items-center space-x-4 overflow-hidden">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-300 font-mono text-sm">${index + 1}</span>
+                        <span class="truncate">${card.title}</span>
+                    </div>
+                    <span class="text-xl font-mono text-red-500">${card.votes} <span class="text-sm">票</span></span>
+                `;
+                list.appendChild(li);
+            });
 
         };
 
@@ -453,25 +453,25 @@ li.innerHTML = `
         * 根據資料建立一個卡片 DOM 元素
         */
         /**
- * 根據資料建立一個卡片 DOM 元素
- */
+ * 根據資料建立一個卡片 DOM 元素
+ */
 function createCard(spell) {
-    const card = document.createElement('div');
-    card.className = 'spell-card';
-    card.setAttribute('data-id', spell.id);
-                
-    card.innerHTML = `
-        <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden spell-icon-container">
-            ${spell.icon}
-        </div>
+    const card = document.createElement('div');
+    card.className = 'spell-card';
+    card.setAttribute('data-id', spell.id);
+                
+    card.innerHTML = `
+        <div class="flex-grow flex flex-col items-center justify-center ${spell.color} overflow-hidden spell-icon-container">
+            ${spell.icon}
+        </div>
 
-        <div class="mt-4 text-center border-t border-gray-200 pt-4">
-            <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
-            
-            <p class="text-sm text-gray-600 mt-3 spell-description">${spell.description}</p>
-        </div>
-    `;
-    return card;
+        <div class="mt-4 text-center border-t border-gray-200 pt-4">
+            <h2 class="text-2xl font-bold font-serif text-amber-800">${spell.title}</h2>
+            
+            <p class="text-sm text-gray-600 mt-3 spell-description">${spell.description}</p>
+        </div>
+    `;
+    return card;
 }
 
         /**
@@ -487,11 +487,11 @@ function createCard(spell) {
                 
                 if (spell) {
                     const card = createCard(spell);
-                    
+                    
                     // **核心修正點：確保 DOM 順序與視覺層次一致**
                     // i=0 是最頂層卡片，應該是 DOM 中的第一個 child。
                     // i=1 是第二層卡片，是 DOM 中的第二個 child (適用 nth-child(2))。
-                    stack.appendChild(card); 
+                    stack.appendChild(card); 
 
                     // 最上層的卡片 (i=0) 獲得 ID 以便蒐藏按鈕使用
                     if (i === 0) {
@@ -525,79 +525,56 @@ function createCard(spell) {
 </head>
 <body class="bg-gradient-to-br from-gray-100 via-yellow-50 to-amber-100 text-gray-800 flex flex-col items-center min-h-screen p-4 overflow-x-hidden">
 
-    <div class="text-center mb-6 p-4 bg-white/70 rounded-xl shadow-xl backdrop-blur-sm border-b-2 border-amber-300">
-        <h1 class="text-4xl font-extrabold text-amber-900 drop-shadow-md">芙莉蓮的民間魔法</h1>
-        <p class="text-gray-600 mt-2 font-serif italic">輕觸左右箭頭來切換，點擊蒐藏魔法來為喜歡的魔法投票！</p>
-    </div>
+    <div class="text-center mb-6 p-4 bg-white/70 rounded-xl shadow-xl backdrop-blur-sm border-b-2 border-amber-300">
+        <h1 class="text-4xl font-extrabold text-amber-900 drop-shadow-md">芙莉蓮的民間魔法</h1>
+        <p class="text-gray-600 mt-2 font-serif italic">輕觸左右箭頭來切換，點擊蒐藏魔法來為喜歡的魔法投票！</p>
+    </div>
 
-    <div class="w-full max-w-7xl flex flex-col items-center md:flex-row md:items-start gap-8 flex-grow">
-        
-        <div class="md:w-3/5 w-full flex flex-col items-center p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-amber-300 min-h-[500px]">
-            
-            <p id="status" class="text-sm text-gray-500 mb-4 h-4">正在初始化 Firebase...</p>
+    <div class="w-full max-w-7xl flex flex-col items-center md:flex-row md:items-start gap-8 flex-grow">
+        
+        <div class="md:w-3/5 w-full flex flex-col items-center p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-amber-300 min-h-[500px]">
+            
+            <p id="status" class="text-sm text-gray-500 mb-4 h-4">正在初始化 Firebase...</p>
 
-            <div class="relative flex items-center justify-center w-full max-w-lg mt-4 mb-8">
-                <button onclick="navigateCard(-1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                </button>
+            <div class="relative flex items-center justify-center w-full max-w-lg mt-4 mb-8">
+                <button onclick="navigateCard(-1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
 
-                <div id="card-stack" class="card-stack relative w-64 h-80 sm:w-72 sm:h-96 max-w-sm mx-4">
-                    <div class="spell-card flex flex-col items-center justify-center text-center text-gray-500">
-                        <h2 class="text-xl font-bold">正在載入卡片...</h2>
-                        <p class="mt-2 text-sm">請稍候</p>
-                    </div>
-                </div>
+                <div id="card-stack" class="card-stack relative w-64 h-80 sm:w-72 sm:h-96 max-w-sm mx-4">
+                    <div class="spell-card flex flex-col items-center justify-center text-center text-gray-500">
+                        <h2 class="text-xl font-bold">正在載入卡片...</h2>
+                        <p class="mt-2 text-sm">請稍候</p>
+                    </div>
+                </div>
 
-                <button onclick="navigateCard(1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                </button>
-            </div>
+                <button onclick="navigateCard(1)" class="p-3 rounded-full bg-white/80 hover:bg-white text-amber-500 shadow-lg transition-all duration-150 transform hover:scale-110 z-20 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
 
 
-            <button id="collect-btn" onclick="collectCard()" class="action-button bg-pink-200 hover:bg-pink-300 text-pink-700 font-extrabold rounded-full p-4 px-8 shadow-xl text-lg flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-                <span>蒐藏這項魔法</span>
-            </button>
-            <p class="mt-4 text-sm text-gray-500">您可以使用左右箭頭來切換魔法。</p>
-        </div>
+            <button id="collect-btn" onclick="collectCard()" class="action-button bg-pink-200 hover:bg-pink-300 text-pink-700 font-extrabold rounded-full p-4 px-8 shadow-xl text-lg flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span>蒐藏這項魔法</span>
+            </button>
+            <p class="mt-4 text-sm text-gray-500">您可以使用左右箭頭來切換魔法。</p>
+        </div>
 
-        <div class="md:w-2/5 w-full p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-yellow-200">
-            <h2 class="text-3xl font-extrabold text-red-700 border-b-4 border-red-200 pb-3 mb-6 font-serif">即時人氣榜</h2>
-            <div id="leaderboard" class="h-full max-h-[600px] overflow-y-auto">
-                <ul id="leaderboard-list" class="space-y-3">
-                    <li class="p-4 bg-yellow-50 rounded-lg text-center text-gray-500 font-serif italic">正在載入人氣數據...</li>
-                </ul>
-            </div>
-        </div>
+        <div class="md:w-2/5 w-full p-6 bg-white/70 rounded-3xl shadow-2xl backdrop-blur-sm border-4 border-yellow-200">
+            <h2 class="text-3xl font-extrabold text-red-700 border-b-4 border-red-200 pb-3 mb-6 font-serif">即時人氣榜</h2>
+            <div id="leaderboard" class="h-full max-h-[600px] overflow-y-auto">
+                <ul id="leaderboard-list" class="space-y-3">
+                    <li class="p-4 bg-yellow-50 rounded-lg text-center text-gray-500 font-serif italic">正在載入人氣數據...</li>
+                </ul>
+            </div>
+        </div>
 
-    </div>
-    
-    <div id="custom-alert" class="fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 pointer-events-none transform translate-y-0 z-50">
-        <span id="alert-message" class="font-semibold"></span>
-    </div>
+    </div>
+    
+    <div id="custom-alert" class="fixed bottom-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 pointer-events-none transform translate-y-0 z-50">
+        <span id="alert-message" class="font-semibold"></span>
+    </div>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
