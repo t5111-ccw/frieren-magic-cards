@@ -203,8 +203,8 @@
         * 這樣每次載入網頁都會使用不同的路徑，實現數據重置。
         */
         const getFirestorePath = () => {
-            // 使用 sessions/[唯一 ID]/magic_cards 來隔離數據
-            return `sessions/${window.sessionId}/frieren_magic_cards`; 
+            // 使用 固定路徑
+            return `global/frieren_magic_cards`; 
         }
 
         // Firebase 初始化與認證
@@ -252,7 +252,7 @@
 
                 // 檢查登入狀態
                 window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
-                window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
+               // window.sessionId = crypto.randomUUID(); // **NEW: 產生本次講座的唯一 ID**
 
                 document.getElementById('status').textContent = 'Firebase 連線成功，載入資料中...'; // 階段一狀態
 
@@ -578,6 +578,7 @@ function createCard(spell) {
 
 </body>
 </html>
+
 
 
 
